@@ -5,6 +5,7 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 @Entity
@@ -36,6 +37,12 @@ public class Ticket {
     @Column(name = "updated_at", nullable = false)
     @UpdateTimestamp
     private Instant updatedAt;
+
+    @OneToMany(mappedBy = "ticketId", fetch = FetchType.LAZY)
+    private List<TicketComment> comments;
+
+    public Ticket() {
+    }
 
     public Instant getUpdatedAt() {
         return updatedAt;
@@ -92,4 +99,8 @@ public class Ticket {
     public void setId(UUID id) {
         this.id = id;
     }
+
+    public List<TicketComment> getComments() {return comments;}
+
+    public void setComments(List<TicketComment> comments) {this.comments = comments;}
 }
