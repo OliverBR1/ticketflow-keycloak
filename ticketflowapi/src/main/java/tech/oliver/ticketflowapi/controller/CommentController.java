@@ -35,6 +35,7 @@ public class CommentController {
     public ResponseEntity<Void> addCommentToTicket(@AuthenticationPrincipal Jwt jwt,
                                                    @PathVariable("ticketId") UUID ticketId,
                                                    @RequestBody AddCommentDto dto) {
+
         var ticket = ticketRepository.findById(ticketId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Ticket not found"));
 

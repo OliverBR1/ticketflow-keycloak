@@ -14,6 +14,7 @@ import tech.oliver.ticketflowapi.controller.dto.UpdateTicketStatusDto;
 import tech.oliver.ticketflowapi.entities.Ticket;
 import tech.oliver.ticketflowapi.entities.TicketStatus;
 import tech.oliver.ticketflowapi.repository.TicketRepository;
+import tech.oliver.ticketflowapi.service.TicketService;
 
 import java.net.URI;
 import java.util.ArrayList;
@@ -26,8 +27,12 @@ public class TicketController {
 
     private final TicketRepository ticketRepository;
 
-    public TicketController(TicketRepository ticketRepository) {
+    private final TicketService ticketService;
+
+    public TicketController(TicketRepository ticketRepository,
+                            TicketService ticketService) {
         this.ticketRepository = ticketRepository;
+        this.ticketService = ticketService;
     }
 
     @GetMapping
@@ -62,7 +67,7 @@ public class TicketController {
         var ticket = ticketRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Ticket not found"));
 
-        if (isAllowedToReadAllTickets(jwt) || isTheTicketOwner(jwt, ticket)) {
+        if (ticketService.isAllowedToReadAllTickets(jwt) || ticketService.isTheTicketOwner(jwt, ticket)) {
 
             return ResponseEntity.ok(ReadTicketDto.fromEntity(ticket));
 
@@ -99,7 +104,7 @@ public class TicketController {
 
         var ticket = ticketOpt.get();
 
-        if (canMoveToInProgress(dto, ticket) || canMarkAsSolvedOrReject(dto, ticket)) {
+        if (ticketService.canMoveToInProgress(dto, ticket) || ticketService.canMarkAsSolvedOrReject(dto, ticket)) {
 
             ticket.setStatus(dto.status());
             ticketRepository.save(ticket);
@@ -110,20 +115,4 @@ public class TicketController {
         return ResponseEntity.noContent().build();
     }
 
-
-    private boolean isTheTicketOwner(Jwt jwt, Ticket ticket) {
-        return jwt.getClaimAsStringList("scp").contains("own:tickets:read") &&
-                ticket.getOwnerId().toString().equals(jwt.getSubject());
-    }
-    private boolean isAllowedToReadAllTickets(Jwt jwt) {
-        return jwt.getClaimAsStringList("scp").contains("tickets:read");
-    }
-
-    private boolean canMarkAsSolvedOrReject(UpdateTicketStatusDto dto, Ticket ticket) {
-        return ticket.getStatus() == TicketStatus.IN_PROGRESS &&
-                (dto.status() == TicketStatus.SOLVED || dto.status() == TicketStatus.REJECTED);
-    }
-    private boolean canMoveToInProgress(UpdateTicketStatusDto dto, Ticket ticket) {
-        return ticket.getStatus() == TicketStatus.OPEN && dto.status() == TicketStatus.IN_PROGRESS;
-    }
 }
